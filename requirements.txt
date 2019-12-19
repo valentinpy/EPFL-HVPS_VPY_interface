@@ -1,0 +1,7 @@
+PyQt5
+PyQt5-sip
+numpy
+pip
+pyqtgraph
+pyserial
+setuptools
