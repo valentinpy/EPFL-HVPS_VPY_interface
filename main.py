@@ -11,15 +11,13 @@ class ComSelect(QtWidgets.QDialog):
     """
     This class is a dialog window asking the user for COM port
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) :
         super(ComSelect, self).__init__(parent)
-
-
 
         # list all available com port in the combobox
         self.portname_comboBox = QtWidgets.QComboBox()
         for info in QtSerialPort.QSerialPortInfo.availablePorts():
-            self.portname_comboBox.addItem(info.portName())
+            self.portname_comboBox.addItem(info.portName() + " " +info.description())
 
         buttonBox = QtWidgets.QDialogButtonBox()
         buttonBox.setOrientation(QtCore.Qt.Horizontal)
@@ -29,19 +27,21 @@ class ComSelect(QtWidgets.QDialog):
 
         lay = QtWidgets.QFormLayout(self)
         lay.addWidget(QtWidgets.QLabel("Please select COM port"))
-        lay.addWidget(QtWidgets.QLabel("The board has to be paired using Windows bluetooth settings\nbefore using this application"))
         lay.addRow("Port Name:", self.portname_comboBox)
         lay.addRow(buttonBox)
+        lay.addWidget(QtWidgets.QLabel("If using USB: select COM port with description: Silicon Labs CP210x...\n"))
+        lay.addWidget(QtWidgets.QLabel("If using Bluetooth:"))
+        lay.addWidget(QtWidgets.QLabel("The board has to be paired using Windows bluetooth settings\nbefore using this application"))
         lay.addWidget(QtWidgets.QLabel("LED DS2 must be blinking before connection"))
         lay.addWidget(QtWidgets.QLabel("LED DS3 will be ON after connection"))
-        lay.addWidget(QtWidgets.QLabel("Try to connect to another COM port if unable to connect"))
+        lay.addWidget(QtWidgets.QLabel("\nTry to connect to another COM port if unable to connect"))
         lay.addWidget(QtWidgets.QLabel("Try to disconnect and reconnect board power supply if unable to connect"))
 
         self.setGeometry(100, 100, 500, 120)
 
 
     def get_results(self):
-        return self.portname_comboBox.currentText()
+        return self.portname_comboBox.currentText().split(" ")[0]
 
 
 
@@ -100,7 +100,10 @@ class HVPS_interface(QtWidgets.QWidget):
             # period is 30ms => 33Hz, if enough data sent by the board
             self.timer = pg.QtCore.QTimer()
             self.timer.timeout.connect(self.updateplot)
-            self.timer.start(30)
+            self.timer.start(20)
+        else:
+            print("canceled")
+            sys.exit(0)
 
     def init_ui(self):
         #TODO: this is a little unclear, should be done better
@@ -142,10 +145,10 @@ class HVPS_interface(QtWidgets.QWidget):
         self.btnVoltIncrease = QtGui.QPushButton("Increase voltage")
         self.btnVoltDecrease = QtGui.QPushButton("Decrease voltage")
 
-        layoutBtnVoltageStep = QtWidgets.QHBoxLayout()
+        layoutBtnVoltageStep = QtWidgets.QVBoxLayout()
         layoutBtnVoltageStep.setSpacing(10)
-        layoutBtnVoltageStep.addWidget(self.btnVoltDecrease)
         layoutBtnVoltageStep.addWidget(self.btnVoltIncrease)
+        layoutBtnVoltageStep.addWidget(self.btnVoltDecrease)
         layoutBtnVoltageStep.addStretch(1)
 
         self.voltageTarget = QtGui.QLineEdit()
@@ -167,7 +170,7 @@ class HVPS_interface(QtWidgets.QWidget):
         self.FreqMeas = QtGui.QLabel("Current Frequncy")
         self.FreqTarget = QtGui.QLineEdit()
         self.FreqTargetConfirm = QtGui.QPushButton("Set frequency")
-        layoutFreqSet = QtWidgets.QHBoxLayout()
+        layoutFreqSet = QtWidgets.QVBoxLayout()
         layoutFreqSet.setSpacing(10)
         layoutFreqSet.addWidget(self.FreqMeas)
         layoutFreqSet.addWidget(self.FreqTarget)
@@ -368,18 +371,27 @@ class HVPS_interface(QtWidgets.QWidget):
         self.on_btn_channel_clicked(7)
 
     def on_btn_channel_activate_all(self):
-        for channel in range(nbChannels):
-            toSend = "C{:02d}{}\n".format(channel, 1)
-            print(toSend)
-            toSend = bytearray(toSend, encoding="utf-8")
-            self.ser.write(toSend)
+        toSend = "C991\n"
+        print(toSend)
+        toSend = bytearray(toSend, encoding="utf-8")
+        self.ser.write(toSend)
+        # for channel in range(nbChannels):
+        #     toSend = "C{:02d}{}\n".format(channel, 1)
+        #     print(toSend)
+        #     toSend = bytearray(toSend, encoding="utf-8")
+        #     self.ser.write(toSend)
 
     def on_btn_channel_deactivate_all(self):
-        for channel in range(nbChannels):
-            toSend = "C{:02d}{}\n".format(channel, 0)
-            print(toSend)
-            toSend = bytearray(toSend, encoding="utf-8")
-            self.ser.write(toSend)
+        toSend = "C990\n"
+        print(toSend)
+        toSend = bytearray(toSend, encoding="utf-8")
+        self.ser.write(toSend)
+
+        # for channel in range(nbChannels):
+        #     toSend = "C{:02d}{}\n".format(channel, 0)
+        #     print(toSend)
+        #     toSend = bytearray(toSend, encoding="utf-8")
+        #     self.ser.write(toSend)
 
     def on_btn_channel_clicked(self, channel):
         print("Clicked on channel: {}".format(channel))
