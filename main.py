@@ -31,6 +31,7 @@ class ComSelect(QtWidgets.QDialog):
         lay.addRow(buttonBox)
         lay.addWidget(QtWidgets.QLabel("If using USB: select COM port with description: Silicon Labs CP210x...\n"))
         lay.addWidget(QtWidgets.QLabel("If using Bluetooth:"))
+        lay.addWidget(QtWidgets.QLabel("You should select a COM port with description: Standard Serial over Bluetooth link..."))
         lay.addWidget(QtWidgets.QLabel("The board has to be paired using Windows bluetooth settings\nbefore using this application"))
         lay.addWidget(QtWidgets.QLabel("LED DS2 must be blinking before connection"))
         lay.addWidget(QtWidgets.QLabel("LED DS3 will be ON after connection"))
@@ -39,11 +40,8 @@ class ComSelect(QtWidgets.QDialog):
 
         self.setGeometry(100, 100, 500, 120)
 
-
     def get_results(self):
         return self.portname_comboBox.currentText().split(" ")[0]
-
-
 
 class HVPS_interface(QtWidgets.QWidget):
     def __init__(self):
@@ -100,14 +98,12 @@ class HVPS_interface(QtWidgets.QWidget):
             # period is 30ms => 33Hz, if enough data sent by the board
             self.timer = pg.QtCore.QTimer()
             self.timer.timeout.connect(self.updateplot)
-            self.timer.start(20)
+            self.timer.start(35)
         else:
             print("canceled")
             sys.exit(0)
 
     def init_ui(self):
-        #TODO: this is a little unclear, should be done better
-
         # ----------------------
         #main layout + window
         # ----------------------
@@ -129,9 +125,9 @@ class HVPS_interface(QtWidgets.QWidget):
 
         #plot 1
         self.plot1Title = QtWidgets.QLabel("DCDC input measured voltage")
-        layoutPlot.addWidget(self.plot1Title)
+        #layoutPlot.addWidget(self.plot1Title)
         self.plotwidget1 = pg.PlotWidget()
-        layoutPlot.addWidget(self.plotwidget1)
+        #layoutPlot.addWidget(self.plotwidget1)
 
         #plot 2
         self.plot2Title = QtWidgets.QLabel("DCDC output measured voltage")
@@ -142,11 +138,13 @@ class HVPS_interface(QtWidgets.QWidget):
         # ----------------------
         # Voltage selection: step and absolute
         # ----------------------
+        self.currentOutVoltage = QtWidgets.QLabel("Current target voltage: n/d")
         self.btnVoltIncrease = QtGui.QPushButton("Increase voltage")
         self.btnVoltDecrease = QtGui.QPushButton("Decrease voltage")
 
         layoutBtnVoltageStep = QtWidgets.QVBoxLayout()
         layoutBtnVoltageStep.setSpacing(10)
+        layoutBtnVoltageStep.addWidget(self.currentOutVoltage)
         layoutBtnVoltageStep.addWidget(self.btnVoltIncrease)
         layoutBtnVoltageStep.addWidget(self.btnVoltDecrease)
         layoutBtnVoltageStep.addStretch(1)
@@ -277,8 +275,10 @@ class HVPS_interface(QtWidgets.QWidget):
         self.plot1Title.setText("DCDC input measured voltage: {}V".format(data[2]))
         self.plot2Title.setText("DCDC output measured voltage: {}V".format(data[3]))
 
-        # update frequency label
+
+        # update frequency label + voltage target label
         self.FreqMeas.setText("Current frequency: {} Hz".format(self.currentFrequency))
+        self.currentOutVoltage.setText("Current target voltage: {}V".format(data[1]))
 
         #update channel status button: text + background color
         for i in range(nbChannels):
@@ -297,7 +297,7 @@ class HVPS_interface(QtWidgets.QWidget):
 
         # flush input if too much data not handled: avoid keeping very old values
         if self.ser.in_waiting > 200:
-            print(self.ser.in_waiting)
+            # print(self.ser.in_waiting)
             self.ser.flushInput()
 
     def on_btnVoltageIncrease_clicked(self):
@@ -375,23 +375,12 @@ class HVPS_interface(QtWidgets.QWidget):
         print(toSend)
         toSend = bytearray(toSend, encoding="utf-8")
         self.ser.write(toSend)
-        # for channel in range(nbChannels):
-        #     toSend = "C{:02d}{}\n".format(channel, 1)
-        #     print(toSend)
-        #     toSend = bytearray(toSend, encoding="utf-8")
-        #     self.ser.write(toSend)
 
     def on_btn_channel_deactivate_all(self):
         toSend = "C990\n"
         print(toSend)
         toSend = bytearray(toSend, encoding="utf-8")
         self.ser.write(toSend)
-
-        # for channel in range(nbChannels):
-        #     toSend = "C{:02d}{}\n".format(channel, 0)
-        #     print(toSend)
-        #     toSend = bytearray(toSend, encoding="utf-8")
-        #     self.ser.write(toSend)
 
     def on_btn_channel_clicked(self, channel):
         print("Clicked on channel: {}".format(channel))
@@ -400,7 +389,7 @@ class HVPS_interface(QtWidgets.QWidget):
         if state == "0":
             newState = 1
         elif (state == "1") or (state == "2"):
-            newState = 3
+            newState = 0
         else:
             newState = 0
 
